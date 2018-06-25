@@ -62,8 +62,10 @@ def plot_crop_layer(cdl, cmap):
     temp1 = cdl[-1,-1]
     cdl[0,0] = 0
     cdl[-1,-1] = 255
-    plt.figure(dpi=250)
+    plt.figure(dpi=400)
     plt.imshow(cdl, cmap=cmap)
+    plt.xticks(())
+    plt.yticks(())
     cdl[0,0] = temp0
     cdl[-1,-1] = temp1
     
@@ -81,6 +83,11 @@ def make_mask(qa_code):
         qa_code (np.array): landsat-8 Quality Assessment data
     """
     return qa_code in [2720, 2724, 2728, 2732]
+
+@np.vectorize
+def adjust_gamma(value, gamma):
+    inv_gamma = 1 / gamma
+    return (value / 255) ** inv_gamma * 255
 
 
 def get_gdal_colormap(geotif):
@@ -160,11 +167,22 @@ def plot_pairwise(input_array, true_labels, cmap="binary"):
 
     """
     row_normalized = np.array([ row / row.sum() for row in input_array ])
-    plt.figure(dpi=300, figsize=(12, 8))
-    plt.imshow(row_normalized.T, cmap=cmap)
+    fig = plt.figure(dpi=300, figsize=(12, 8))
+    ax = fig.add_subplot(111)
+
+    ax.imshow(row_normalized.T, cmap=cmap)
     plt.yticks(np.arange(input_array.shape[1]), true_labels)
     plt.xticks(np.arange(input_array.shape[0]))
-    plt.colorbar()
+    """ Normalizing across rows -> specific value is unimportant
+    color_bar = fig.colorbar(ax.images[0])
+    cbytick_obj = plt.getp(color_bar.ax.axes, "yticklabels")
+    plt.setp(cbytick_obj, color="w", size=14)
+    """
+    ax.xaxis.label.set_color("white")
+    ax.tick_params(axis="x", colors="white", labelsize=14)
+    ax.tick_params(axis="y", colors="white", labelsize=14, size=6)
+
+    
 
 def most_common_labels( image, input_labels ):
     """ Returns list of labels used in image, ordered by prevalence.
